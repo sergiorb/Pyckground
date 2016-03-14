@@ -1,13 +1,21 @@
 #!/usr/bin/python
- # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
-import os, json, urllib2, random, sys, getopt, shutil, argparse
+import os
+import json
+import urllib2
+import random
+import sys
+import getopt
+import shutil
+import argparse
 from urllib import urlretrieve
+
 
 class Pyckground():
 	"""
-		Pyckground allows you to download and set an image from internet as
-		your background.
+	Pyckground allows you to download and set an image from internet as
+	your background.
 	"""
 
 	default_image_folder_path = './wallpapers'
@@ -23,12 +31,12 @@ class Pyckground():
 			json_data = json.load(urllib2.urlopen(url))
 			print "data loaded!"
 			return json_data
-		except:
+		except Exception, e:
 			print "Can't connect to %s" % url
+			print 'Error: %s' % e
 			return False
 
-
-	def clean_image_type(self, string):
+	def get_format_from_mimetype(self, string):
 		"""
 			Returns image type from mimetype string.
 		"""
@@ -38,10 +46,9 @@ class Pyckground():
 			return image_type
 		except:
 			return 'unknown'
-		
 
-	def get_image_from_url(self, image, 
-		destination_path=default_image_folder_path):
+	def get_image_from_url(self, image,
+		destination_path=default_image_folder_path, delete_last=True):
 		"""
 			Get image from given url and writes it to given destination_path.
 		"""
@@ -50,20 +57,37 @@ class Pyckground():
 			print "Downloading image from %s ..." % image['link']
 
 			destination_path = '%s/%s.%s' % (
-				destination_path, 
-				image['id'], 
-				self.clean_image_type(image['type']))
+				destination_path,
+				image['id'],
+				self.get_format_from_mimetype(image['type']))
 
 			file = urlretrieve(image['link'], destination_path)
+
+			if delete_last:
+				print "Deleting previous image..."
+				self.delete_image(self.get_last_image_path())
+				print "Done!"
+
 			self.save_last_image_path(destination_path)
 
 			print "image successfully downloaded to %s!" % destination_path
 
-			return {'path':file[0]}
+			return {'path': file[0]}
 		except Exception, e:
 			print "Error!: %s" % e
 			return False
 
+	def delete_image(self, image_path):
+		"""
+			Delete image from given path.
+		"""
+
+		try:
+			os.remove(image_path)
+			return True
+		except Exception, e:
+			print "Error!: %s" % e
+			return False
 
 	def apply_background(self, image_path=default_image_folder_path):
 		"""
@@ -84,10 +108,9 @@ class Pyckground():
 			print "Error!: %s" % e
 			return False
 
-
 	def save_last_image_path(self, last_image_path):
 		"""
-			Saves last image path
+			Saves last image path.
 		"""
 
 		try:
@@ -100,7 +123,6 @@ class Pyckground():
 			print "Can't save config file: %s" % self.config_file_path
 			return False
 
-
 	def get_last_image_path(self):
 		"""
 			Returns last image path.
@@ -111,12 +133,11 @@ class Pyckground():
 			data = file.read()
 			file.close()
 			json_data = json.loads(data)
-			return  json_data['last_image_path']
+			return json_data['last_image_path']
 		except Exception, e:
 			print "Can't load config file: %s" % self.config_file_path
 			print "Error: %s" % e
 			return None
-
 
 	def copy_current_image(self, destination_path):
 
@@ -130,8 +151,7 @@ class Pyckground():
 		else:
 			print "No destination_path given."
 
-
-	def imgur(self, gallery_id):
+	def imgur(self, gallery_id, delete_last=True):
 
 		"""
 			Connects to imgur gallery api and sets a random image as your 
@@ -148,7 +168,8 @@ class Pyckground():
 		if json:
 			selected_image = random.choice(json['data']['images'])
 
-			image_file = self.get_image_from_url(selected_image)
+			image_file = self.get_image_from_url(selected_image,
+				delete_last=delete_last)
 
 			self.apply_background(image_file['path'])
 
@@ -160,6 +181,9 @@ def main():
 	parser.add_argument("-a", "--galleryId", help="Allows you to download and \
 		set an image from an Imgur  gallery as your background.")
 
+	parser.add_argument("-nD", "--noDelete", action="store_true", help="Avoids \
+		last image deletion when downloading a new wallpaper.")
+
 	parser.add_argument("-c", "--copyCurrentImage", help="Copy last used \
 		image to given path.")
 
@@ -169,15 +193,17 @@ def main():
 
 	gallery_id = ''
 	destination_path = ''
+	delete_last = True
 
 	if args.galleryId:
 		gallery_id = args.galleryId
+		if args.noDelete:
+			delete_last = False
 	elif args.copyCurrentImage:
 		destination_path = args.copyCurrentImage
-		
 
 	if gallery_id:
-		pyckground.imgur(gallery_id)
+		pyckground.imgur(gallery_id, delete_last=delete_last)
 	elif destination_path:
 		pyckground.copy_current_image(destination_path)
 	else:
@@ -186,5 +212,5 @@ def main():
 	sys.exit()
 
 
-if  __name__ =='__main__':
+if __name__ == '__main__':
 	main()
