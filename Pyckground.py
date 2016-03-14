@@ -1,4 +1,5 @@
-# Thanks to http://unix.stackexchange.com/questions/59653/change-desktop-wallpaper-from-terminal
+#!/usr/bin/python
+ # -*- coding: utf-8 -*-
 
 import os
 import json
@@ -6,20 +7,49 @@ import urllib2
 import random
 from urllib import urlretrieve
 import time
+import sys, getopt
 
-imgur_album_link = "https://api.imgur.com/3/album/dbVN1"
+album_id = ''
+json_data = []
+api_link = 'https://api.imgur.com/3/album/'
+wallpaper_path = './wallpapers/wallpaper.jpg'
 
-json_data = json.load(urllib2.urlopen(imgur_album_link))
+try:
+	opts, args = getopt.getopt(sys.argv[1:],"h:a:")
+except getopt.GetoptError:
 
-#print json_data['data']['images']
+	print 'Pyckground.py -a imgur_albun_id'
+	sys.exit(2)
 
-images = json_data['data']['images']
+for opt, arg in opts:
+	if opt == '-h':
+		print 'Pyckground.py -a imgur_albun_id'
+		sys.exit()
+	elif opt in ("-a"):
+		album_id = arg
 
-selected_image = random.choice(images)
+imgur_album_link = "%s%s" % (api_link, album_id)
 
-file = urlretrieve(selected_image['link'], './wallpapers/wallpaper.jpg')
+try:
+	print "Connecting with Imgur api..."
+	json_data = json.load(urllib2.urlopen(imgur_album_link))
+	print "Album data loaded!"
+except:
+	print "Can't connect to Imgur¡¡"
 
-command = 'gsettings set org.cinnamon.desktop.background picture-uri'
-image_url = 'file://%s' % os.path.abspath(file[0])
+if json_data:
+	selected_image = random.choice(json_data['data']['images'])
 
-os.system('%s "%s"' % (command, image_url))
+	print "Downloading random image..."
+	file = urlretrieve(selected_image['link'], wallpaper_path)
+	print "random image successfully downloaded!"
+
+
+	# Thanks to http://unix.stackexchange.com/questions/59653/change-desktop-wallpaper-from-terminal
+
+	command = 'gsettings set org.cinnamon.desktop.background picture-uri'
+	image_url = 'file://%s' % os.path.abspath(file[0])
+
+	print "Applying image as wallpaper..."
+	os.system('%s "%s"' % (command, image_url))
+	print "Success!"
