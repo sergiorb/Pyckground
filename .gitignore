@@ -1,1 +1,5 @@
-wallpapers/wallpaper.jpg
+wallpapers/wallpaper.removethis
+wallpapers/*jpeg
+wallpapers/*jpg
+wallpapers/*png
+config.json
