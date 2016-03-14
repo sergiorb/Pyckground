@@ -157,7 +157,7 @@ def main():
 
 	parser = argparse.ArgumentParser()
 
-	parser.add_argument("-a", "--galleryId", help="allows you to download and \
+	parser.add_argument("-a", "--galleryId", help="Allows you to download and \
 		set an image from an Imgur  gallery as your background.")
 
 	parser.add_argument("-c", "--copyCurrentImage", help="Copy last used \
